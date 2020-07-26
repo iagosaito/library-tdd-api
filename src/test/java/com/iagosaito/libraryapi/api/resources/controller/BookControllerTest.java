@@ -2,6 +2,7 @@ package com.iagosaito.libraryapi.api.resources.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.iagosaito.libraryapi.api.dto.BookModel;
+import com.iagosaito.libraryapi.domain.exception.BookNotFoundException;
 import com.iagosaito.libraryapi.domain.exception.BusinessException;
 import com.iagosaito.libraryapi.domain.model.Book;
 import com.iagosaito.libraryapi.domain.service.BookService;
@@ -10,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
 import org.mockito.Mockito;
+import org.mockito.internal.matchers.Any;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -20,6 +22,8 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+
+import java.util.Optional;
 
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -41,7 +45,7 @@ public class BookControllerTest {
     @Test
     public void Given_Book_When_PostBook_Then_CreateNewBook() throws Exception {
 
-        BookModel bookDTO = BookModel.builder().author("Iago").title("The Adventures of Iago").isbn("1").build();
+        BookModel bookDTO = createNewBook();
         Book savedBook = Book.builder().id(1L).author("Iago").title("The Adventures of Iago").isbn("1").build();
 
         BDDMockito.given(bookService.save(Mockito.any(Book.class))).willReturn(savedBook);
@@ -102,8 +106,80 @@ public class BookControllerTest {
     }
 
     @Test
-    public void When_GetBook_Then_GetBookDetail() {
+    public void When_GetBookById_Then_GetBookDetail() throws Exception {
 
+        Long bookId = 1L;
+
+        Book book = Book.builder()
+                .id(bookId)
+                .author(createNewBook().getAuthor())
+                .isbn(createNewBook().getIsbn())
+                .title(createNewBook().getTitle())
+            .build();
+
+        BDDMockito.given(bookService.findById(bookId))
+                .willReturn(Optional.of(book));
+
+        MockHttpServletRequestBuilder request = MockMvcRequestBuilders
+                .get(BOOK_URI.concat("/" + bookId))
+                .accept(MediaType.APPLICATION_JSON);
+
+        mockMvc.perform(request)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("id").value(1L))
+                .andExpect(jsonPath("title").value(book.getTitle()))
+                .andExpect(jsonPath("author").value(book.getAuthor()))
+                .andExpect(jsonPath("isbn").value(book.getIsbn()));
+    }
+
+    @Test
+    public void When_GetBookByID_And_BookNotFound_Then_ThrowException() throws Exception {
+
+        Long bookId = 1L;
+
+        BDDMockito.given(bookService.findById(bookId))
+                .willReturn(Optional.empty());
+
+        MockHttpServletRequestBuilder request = MockMvcRequestBuilders
+                .get(BOOK_URI.concat("/" + bookId))
+                .accept(MediaType.APPLICATION_JSON);
+
+        mockMvc.perform(request)
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    public void When_DeleteBook_Then_ReturnNoContentStatus() throws Exception {
+
+        Long bookId = 1L;
+
+        BDDMockito.given(bookService.findById(Mockito.anyLong()))
+                .willReturn(Optional.of(Book.builder().id(bookId).build()));
+
+        MockHttpServletRequestBuilder request = MockMvcRequestBuilders
+                .delete(BOOK_URI.concat("/" + bookId));
+
+        mockMvc.perform(request)
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    public void When_DeleteNonExistBook_Then_ReturnNotFoundStatus() throws Exception {
+
+        Long bookId = 1L;
+
+        BDDMockito.given(bookService.findById(Mockito.anyLong()))
+                .willReturn(Optional.empty());
+
+        MockHttpServletRequestBuilder request = MockMvcRequestBuilders
+                .delete(BOOK_URI.concat("/" + bookId));
+
+        mockMvc.perform(request)
+                .andExpect(status().isNotFound());
+    }
+
+    private BookModel createNewBook() {
+        return BookModel.builder().author("Iago").title("The Adventures of Iago").isbn("1").build();
     }
 
 }

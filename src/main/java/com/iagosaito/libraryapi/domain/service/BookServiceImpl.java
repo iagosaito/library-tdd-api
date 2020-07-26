@@ -7,6 +7,8 @@ import com.iagosaito.libraryapi.domain.service.BookService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.Optional;
+
 @Service
 public class BookServiceImpl implements BookService {
 
@@ -23,5 +25,15 @@ public class BookServiceImpl implements BookService {
         }
 
         return bookRepository.save(book);
+    }
+
+    @Override
+    public Optional<Book> findById(Long bookId) {
+        return null;
+    }
+
+    @Override
+    public void delete(Book book) {
+
     }
 }

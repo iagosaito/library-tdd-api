@@ -13,7 +13,8 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
-import org.springframework.test.context.junit4.SpringRunner;
+
+import java.util.Optional;
 
 @ExtendWith(SpringExtension.class)
 @ActiveProfiles("test")
@@ -31,12 +32,7 @@ public class BookRepositoryTest {
         //given
         String isbn = "123";
 
-        Book book = Book.builder()
-                .isbn(isbn)
-                .title("Teste")
-                .author("Iago Saito")
-                .build();
-
+        Book book = createNewBookWithoutId(isbn);
 
         entityManager.persist(book);
 
@@ -46,6 +42,7 @@ public class BookRepositoryTest {
         //given
         Assertions.assertThat(exists).isTrue();
     }
+
 
     @Test
     public void returnFalseWhenIsbnDoesNotExists() {
@@ -57,6 +54,32 @@ public class BookRepositoryTest {
 
         //given
         Assertions.assertThat(exists).isFalse();
+    }
+
+    @Test
+    public void returnBookWhenFindById() {
+        Book book = createNewBookWithoutId("123");
+
+        book = entityManager.persist(book);
+
+        Optional<Book> foundBook = bookRepository.findById(book.getId());
+
+        Assertions.assertThat(foundBook.isPresent()).isTrue();
+    }
+
+    @Test
+    public void returnNonFoundBookWhenFindById() {
+        Optional<Book> nonFoundBook = bookRepository.findById(999L);
+
+        Assertions.assertThat(nonFoundBook.isPresent()).isFalse();
+    }
+
+    private Book createNewBookWithoutId(String isbn) {
+        return Book.builder()
+                .isbn(isbn)
+                .title("Teste")
+                .author("Iago Saito")
+                .build();
     }
 
 }

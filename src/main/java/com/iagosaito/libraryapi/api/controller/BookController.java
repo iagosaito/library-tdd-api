@@ -47,6 +47,19 @@ public class BookController {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     }
 
+    @PutMapping("/{id}")
+    public BookModel update(@PathVariable Long id, @RequestBody @Valid BookModel bookModel) {
+        return bookService.findById(id).map(book -> {
+
+            book.setTitle(bookModel.getTitle());
+            book.setAuthor(bookModel.getAuthor());
+
+            Book savedBook = bookService.save(book);
+
+            return modelMapper.map(savedBook, BookModel.class);
+        }).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+    }
+
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable Long id) {

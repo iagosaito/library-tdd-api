@@ -1,5 +1,6 @@
 package com.iagosaito.libraryapi.api.resources.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.iagosaito.libraryapi.api.dto.BookModel;
 import com.iagosaito.libraryapi.domain.exception.BookNotFoundException;
@@ -176,6 +177,70 @@ public class BookControllerTest {
 
         mockMvc.perform(request)
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    public void Update_InexistentBook_Then_ReturnStatus404() throws Exception {
+
+        long bookId = 1L;
+
+        BookModel updatedBook = createNewBook();
+
+        String bookModelJson = new ObjectMapper().writeValueAsString(updatedBook);
+
+        BDDMockito.given(bookService.findById(Mockito.anyLong()))
+                .willReturn(Optional.empty());
+
+        MockHttpServletRequestBuilder request = MockMvcRequestBuilders
+                .put(BOOK_URI.concat("/" + bookId))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(bookModelJson);
+
+        mockMvc.perform(request)
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    public void Update_ValidBook_Then_ReturnBookAndStatus200() throws Exception {
+
+        long bookId = 1L;
+
+        BookModel bookModel = createNewBook();
+
+        Book updatingBook = Book.builder()
+                .id(1L)
+                .author("Some Author")
+                .title("Some Title")
+                .isbn("1")
+            .build();
+
+        Book updatedBook = Book.builder()
+                .id(1L)
+                .author("Iago")
+                .title("The Adventures of Iago")
+                .isbn("1")
+            .build();
+
+        String bookModelJson = new ObjectMapper().writeValueAsString(bookModel);
+
+        BDDMockito.given(bookService.findById(bookId))
+                .willReturn(Optional.ofNullable(updatingBook));
+
+        BDDMockito.given(bookService.save(Mockito.any()))
+                .willReturn(updatedBook);
+
+        MockHttpServletRequestBuilder request = MockMvcRequestBuilders
+                .put(BOOK_URI.concat("/" + bookId))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(bookModelJson);
+
+        mockMvc.perform(request)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("id").value(1L))
+                .andExpect(jsonPath("title").value(createNewBook().getTitle()))
+                .andExpect(jsonPath("author").value(createNewBook().getAuthor()))
+                .andExpect(jsonPath("isbn").value(createNewBook().getIsbn()));
+
     }
 
     private BookModel createNewBook() {

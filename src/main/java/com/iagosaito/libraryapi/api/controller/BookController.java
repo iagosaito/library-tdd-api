@@ -8,6 +8,9 @@ import com.iagosaito.libraryapi.domain.model.Book;
 import com.iagosaito.libraryapi.domain.service.BookService;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
@@ -19,6 +22,7 @@ import org.springframework.web.server.ResponseStatusException;
 import javax.validation.Valid;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping(path = "/api/books")
@@ -45,6 +49,20 @@ public class BookController {
         return bookService.findById(id)
                 .map(book -> modelMapper.map(book, BookModel.class))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+    }
+
+    @GetMapping
+    public Page<BookModel> filter(BookModel bookModel,
+                                  Pageable pageable) {
+        Book book = modelMapper.map(bookModel, Book.class);
+
+        Page<Book> bookPage = bookService.filter(book, pageable);
+
+        List<BookModel> bookModelList = bookPage.getContent().stream()
+                .map(entity -> modelMapper.map(entity, BookModel.class))
+                .collect(Collectors.toList());
+
+        return new PageImpl<>(bookModelList, pageable, bookPage.getTotalElements());
     }
 
     @PutMapping("/{id}")

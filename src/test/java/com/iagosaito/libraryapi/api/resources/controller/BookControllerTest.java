@@ -2,6 +2,7 @@ package com.iagosaito.libraryapi.api.resources.controller;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.iagosaito.libraryapi.api.controller.BookController;
 import com.iagosaito.libraryapi.api.dto.BookModel;
 import com.iagosaito.libraryapi.domain.exception.BookNotFoundException;
 import com.iagosaito.libraryapi.domain.exception.BusinessException;
@@ -17,6 +18,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
@@ -24,14 +28,16 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
+import java.util.Collections;
 import java.util.Optional;
 
+import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @ExtendWith(SpringExtension.class)
 @ActiveProfiles("test")
-@WebMvcTest
+@WebMvcTest(BookController.class)
 @AutoConfigureMockMvc
 public class BookControllerTest {
 
@@ -80,7 +86,7 @@ public class BookControllerTest {
 
         mockMvc.perform(request)
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("errors", Matchers.hasSize(3)));
+                .andExpect(jsonPath("errors", hasSize(3)));
     }
 
     @Test
@@ -102,7 +108,7 @@ public class BookControllerTest {
 
         mockMvc.perform(requestBuilder)
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("errors", Matchers.hasSize(1)))
+                .andExpect(jsonPath("errors", hasSize(1)))
                 .andExpect(jsonPath("errors[0]").value(errorMessage));
     }
 
@@ -241,6 +247,31 @@ public class BookControllerTest {
                 .andExpect(jsonPath("author").value(createNewBook().getAuthor()))
                 .andExpect(jsonPath("isbn").value(createNewBook().getIsbn()));
 
+    }
+
+    @Test
+    public void WhenFilterBook_Then_ReturnPagedBook() throws Exception {
+
+        Book book = Book.builder()
+                .id(1L)
+                .author(createNewBook().getAuthor())
+                .title(createNewBook().getTitle())
+                .isbn(createNewBook().getIsbn())
+                .build();
+
+        BDDMockito.given(bookService.filter(Mockito.any(Book.class), Mockito.any(Pageable.class)))
+                .willReturn(new PageImpl<>(Collections.singletonList(book), PageRequest.of(0, 1), 1));
+
+        MockHttpServletRequestBuilder request = MockMvcRequestBuilders
+                .get(BOOK_URI.concat(String.format("?title=%s&author=%s", book.getTitle(), book.getAuthor())))
+                .contentType(MediaType.APPLICATION_JSON);
+
+        mockMvc.perform(request)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("content", hasSize(1)))
+                .andExpect(jsonPath("totalElements").value(1))
+                .andExpect(jsonPath("pageable.pageSize").value(20))
+                .andExpect(jsonPath("pageable.pageNumber").value(0));
     }
 
     private BookModel createNewBook() {

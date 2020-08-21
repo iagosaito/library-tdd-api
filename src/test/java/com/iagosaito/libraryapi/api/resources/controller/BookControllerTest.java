@@ -4,25 +4,30 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.iagosaito.libraryapi.api.controller.BookController;
 import com.iagosaito.libraryapi.api.dto.BookModel;
+import com.iagosaito.libraryapi.config.LibraryTestConfig;
 import com.iagosaito.libraryapi.domain.exception.BookNotFoundException;
 import com.iagosaito.libraryapi.domain.exception.BusinessException;
 import com.iagosaito.libraryapi.domain.model.Book;
 import com.iagosaito.libraryapi.domain.service.BookService;
+import com.iagosaito.libraryapi.domain.service.LoanService;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
 import org.mockito.Mockito;
 import org.mockito.internal.matchers.Any;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
@@ -36,9 +41,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @ExtendWith(SpringExtension.class)
+@WebMvcTest(value = BookController.class)
 @ActiveProfiles("test")
-@WebMvcTest(BookController.class)
 @AutoConfigureMockMvc
+@Import(LibraryTestConfig.class)
 public class BookControllerTest {
 
     private static String BOOK_URI = "/api/books";

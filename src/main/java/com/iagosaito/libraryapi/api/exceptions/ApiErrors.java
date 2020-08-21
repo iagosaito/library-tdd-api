@@ -4,6 +4,7 @@ import com.iagosaito.libraryapi.domain.exception.BusinessException;
 import lombok.Getter;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.ObjectError;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -24,5 +25,9 @@ public class ApiErrors {
 
     public ApiErrors(BusinessException businessException) {
         this.errors = Collections.singletonList(businessException.getMessage());
+    }
+
+    public ApiErrors(ResponseStatusException ex) {
+        this.errors = Collections.singletonList(ex.getReason());
     }
 }

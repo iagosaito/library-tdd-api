@@ -1,18 +1,22 @@
 package com.iagosaito.libraryapi.api.resources.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.iagosaito.libraryapi.api.controller.LoanController;
 import com.iagosaito.libraryapi.api.dto.LoanModel;
+import com.iagosaito.libraryapi.config.LibraryTestConfig;
+import com.iagosaito.libraryapi.domain.exception.BusinessException;
 import com.iagosaito.libraryapi.domain.model.Book;
 import com.iagosaito.libraryapi.domain.model.Loan;
 import com.iagosaito.libraryapi.domain.service.LoanService;
-import com.iagosaito.libraryapi.domain.model.LoanController;
 import com.iagosaito.libraryapi.domain.service.BookService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
@@ -24,13 +28,14 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import java.time.LocalDate;
 import java.util.Optional;
 
+import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @ExtendWith(SpringExtension.class)
-@WebMvcTest(LoanController.class)
+@WebMvcTest(controllers = LoanController.class)
 @ActiveProfiles("test")
 @AutoConfigureMockMvc
 public class LoanControllerTest {
@@ -66,6 +71,51 @@ public class LoanControllerTest {
         mockMvc.perform(request)
                 .andExpect(status().isCreated())
                 .andExpect(content().string("1"));
+    }
+
+    @Test
+    public void GivenLoanWithNonExistentISBN_WhenPost_ReturnStatus400() throws Exception {
+
+        final String errorMessage = "ISBN not found!!";
+
+        LoanModel loanModel = createNewLoanModel();
+        String json = new ObjectMapper().writeValueAsString(loanModel);
+
+        given(bookService.getByIsbn(anyString())).willReturn(Optional.empty());
+
+        MockHttpServletRequestBuilder request = MockMvcRequestBuilders
+                .post(LOAN_URI)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json);
+
+        mockMvc.perform(request)
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("errors", hasSize(1)))
+                .andExpect(jsonPath("errors[0]").value(errorMessage));
+    }
+
+    @Test
+    public void GivenBookAlreadyLoaned_WhenPost_ReturnStatus400() throws Exception {
+
+        final String errorMessage = "Book already loaned";
+
+        LoanModel loanModel = createNewLoanModel();
+        String json = new ObjectMapper().writeValueAsString(loanModel);
+
+        Book book = createNewBookWithId();
+
+        given(bookService.getByIsbn(anyString())).willReturn(Optional.of(book));
+        given(loanService.save(any(Loan.class))).willThrow(new BusinessException(errorMessage));
+
+        MockHttpServletRequestBuilder request = MockMvcRequestBuilders
+                .post(LOAN_URI)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json);
+
+        mockMvc.perform(request)
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("errors", hasSize(1)))
+                .andExpect(jsonPath("errors[0]").value(errorMessage));
     }
 
     private Loan createNewLoanWithId() {

@@ -98,7 +98,7 @@ public class BookRepositoryTest {
         Assertions.assertThat(foundBook.isPresent()).isFalse();
     }
 
-    private Book createNewBookWithoutId(String isbn) {
+    public static Book createNewBookWithoutId(String isbn) {
         return Book.builder()
                 .isbn(isbn)
                 .title("Teste")

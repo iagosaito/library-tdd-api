@@ -26,6 +26,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(SpringExtension.class)
 @ActiveProfiles("test")
@@ -46,7 +47,7 @@ public class BookServiceTest {
         //given
         Book book = createValidBookWithoutId();
 
-        Mockito.when(bookRepository.save(book))
+        when(bookRepository.save(book))
                 .thenReturn(
                         Book.builder()
                             .id(1L)
@@ -69,7 +70,7 @@ public class BookServiceTest {
     public void mustNotSaveBookWithDuplicateISBN() {
         Book book = createValidBookWithoutId();
 
-        Mockito.when(bookRepository.existsByIsbn(Mockito.anyString()))
+        when(bookRepository.existsByIsbn(Mockito.anyString()))
                 .thenReturn(true);
 
         Throwable businessException = Assertions.catchThrowable(() -> bookService.save(book));
@@ -86,7 +87,7 @@ public class BookServiceTest {
         Book book = createValidBookWithoutId();
         book.setId(idBook);
 
-        Mockito.when(bookRepository.findById(idBook)).thenReturn(Optional.of(book));
+        when(bookRepository.findById(idBook)).thenReturn(Optional.of(book));
 
         Optional<Book> foundBook = bookService.findById(idBook);
 
@@ -101,7 +102,7 @@ public class BookServiceTest {
     public void mustNotFoundBookByIdThatDoesnExist() {
         Long idBook = 1L;
 
-        Mockito.when(bookRepository.findById(idBook)).thenReturn(Optional.empty());
+        when(bookRepository.findById(idBook)).thenReturn(Optional.empty());
 
         Optional<Book> foundBook = bookService.findById(idBook);
 
@@ -183,7 +184,7 @@ public class BookServiceTest {
 
         Page<Book> bookPage = new PageImpl<>(bookList, pageRequest, 1);
 
-        Mockito.when( bookRepository.findAll(any(Example.class), any(PageRequest.class)) )
+        when( bookRepository.findAll(any(Example.class), any(PageRequest.class)) )
                 .thenReturn(bookPage);
 
         Page<Book> result = bookService.filter(book, pageRequest);
@@ -194,6 +195,25 @@ public class BookServiceTest {
         assertThat(result.getPageable().getPageSize()).isEqualTo(10);
 
     }
+
+    @Test
+    public void mustGetBookByIsbn() {
+        final String isbn = "1234";
+
+        Book book = createValidBookWithoutId();
+        book.setId(1L);
+        book.setIsbn(isbn);
+
+        when(bookRepository.findByIsbn(isbn)).thenReturn(Optional.of(book));
+
+        Optional<Book> foundBook = bookService.findByIsbn(isbn);
+
+        assertThat(foundBook.isPresent()).isTrue();
+        assertThat(foundBook.get().getId()).isEqualTo(book.getId());
+        assertThat(foundBook.get().getIsbn()).isEqualTo(isbn);
+    }
+
+
 
     private Book createValidBookWithoutId() {
         return Book.builder()

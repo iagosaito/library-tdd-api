@@ -3,7 +3,7 @@ package com.iagosaito.libraryapi.api.resources.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.iagosaito.libraryapi.api.controller.LoanController;
 import com.iagosaito.libraryapi.api.dto.LoanModel;
-import com.iagosaito.libraryapi.config.LibraryTestConfig;
+import com.iagosaito.libraryapi.api.dto.ReturnedLoanInput;
 import com.iagosaito.libraryapi.domain.exception.BusinessException;
 import com.iagosaito.libraryapi.domain.model.Book;
 import com.iagosaito.libraryapi.domain.model.Loan;
@@ -11,27 +11,24 @@ import com.iagosaito.libraryapi.domain.service.LoanService;
 import com.iagosaito.libraryapi.domain.service.BookService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
 import java.time.LocalDate;
 import java.util.Optional;
 
 import static org.hamcrest.Matchers.hasSize;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @ExtendWith(SpringExtension.class)
@@ -116,6 +113,47 @@ public class LoanControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("errors", hasSize(1)))
                 .andExpect(jsonPath("errors[0]").value(errorMessage));
+    }
+
+    @Test
+    public void GivenLoan_WhenReturnBook_UpdateLoan() throws Exception {
+        ReturnedLoanInput returnedLoanInput = new ReturnedLoanInput(true);
+
+        Loan loan = createNewLoanWithId();
+
+        given(loanService.findById(anyLong())).willReturn(Optional.of(loan));
+
+        MockHttpServletRequestBuilder request = MockMvcRequestBuilders
+                .patch(LOAN_URI.concat("/1"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON)
+                .content(new ObjectMapper().writeValueAsString(returnedLoanInput));
+
+        mockMvc.perform(request)
+                .andExpect(status().isNoContent());
+
+        verify(loanService, times(1)).update(loan);
+        verify(loanService, times(1)).findById(anyLong());
+    }
+
+    @Test
+    public void GivenNonExistLoan_WhenUpdate_ThenReturnStatus404() throws Exception {
+
+        ReturnedLoanInput returnedLoanInput = new ReturnedLoanInput(true);
+
+        given(loanService.findById(anyLong())).willReturn(Optional.empty());
+
+        MockHttpServletRequestBuilder request = MockMvcRequestBuilders
+                .patch(LOAN_URI.concat("/1"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON)
+                .content(new ObjectMapper().writeValueAsString(returnedLoanInput));
+
+        mockMvc.perform(request)
+                .andExpect(status().isNotFound());
+
+        verify(loanService, never()).update(any(Loan.class));
+        verify(loanService, times(1)).findById(anyLong());
     }
 
     private Loan createNewLoanWithId() {

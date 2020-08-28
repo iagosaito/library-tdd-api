@@ -1,13 +1,8 @@
 package com.iagosaito.libraryapi.domain.model;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
-import javax.persistence.Entity;
-import javax.persistence.PrePersist;
-import javax.persistence.Table;
+import javax.persistence.*;
 import java.time.LocalDate;
 
 @Data
@@ -16,12 +11,24 @@ import java.time.LocalDate;
 @AllArgsConstructor
 @Entity
 @Table(name = "loan")
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class Loan {
 
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @EqualsAndHashCode.Include
     private Long loanId;
+
+    @Column
     private String customer;
+
+    @ManyToOne
+    @JoinColumn
     private Book book;
+
+    @Column
     private LocalDate localDate;
+
+    @Column
     private Boolean returned;
 
     @PrePersist

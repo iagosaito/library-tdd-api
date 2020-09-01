@@ -9,15 +9,9 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 
 @SpringBootApplication
-@EnableScheduling
 public class LibraryApiApplication {
 
 	public static void main(String[] args) {
 		SpringApplication.run(LibraryApiApplication.class, args);
-	}
-
-	@Scheduled(cron = "0 0 0 0 0 0")
-	public void testScheduled() {
-
 	}
 }

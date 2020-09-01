@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 import java.util.Optional;
 
 @Service
-public class LoanServiceImpl implements LoanService{
+public class LoanServiceImpl implements LoanService {
 
     private LoanRepository loanRepository;
 
@@ -35,4 +35,6 @@ public class LoanServiceImpl implements LoanService{
     public Loan update(Loan loan) {
         return loanRepository.save(loan);
     }
+
+
 }

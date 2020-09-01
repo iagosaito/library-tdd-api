@@ -2,6 +2,7 @@ package com.iagosaito.libraryapi.domain.service;
 
 import com.iagosaito.libraryapi.domain.model.Loan;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface LoanService {
